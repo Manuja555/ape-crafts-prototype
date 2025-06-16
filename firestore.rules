@@ -1,9 +1,46 @@
 rules_version = '2';
-
 service cloud.firestore {
   match /databases/{database}/documents {
-    match /{document=**} {
-      allow read, write: if false;
+    // Users collection: Authenticated users can create their own profile, read all, update their own.
+    match /users/{userId} {
+      allow read: if request.auth != null; // All authenticated users can read any user profile (e.g., for messaging)
+      allow create: if request.auth != null; // Anyone logged in can create a user profile for themselves
+      allow update: if request.auth != null && request.auth.uid == userId; // Users can only update their own profile
+      allow delete: if false; // No direct deletion for prototype
+    }
+
+    // Products collection: All authenticated users can read, only artisans can create/update their own.
+    match /products/{productId} {
+      allow read: if request.auth != null; // Authenticated users can browse products
+      // Only authenticated users with userType 'artisan' can create products
+      allow create: if request.auth != null && get(/databases/<span class="math-inline">\(database\)/documents/users/</span>(request.auth.uid)).data.userType == 'artisan';
+      // Artisans can only update their own products
+      allow update: if request.auth != null && get(/databases/<span class="math-inline">\(database\)/documents/users/</span>(request.auth.uid)).data.userType == 'artisan' && resource.data.artisanUid == request.auth.uid;
+      allow delete: if false; // No direct deletion for prototype
+    }
+
+    // Inquiries collection: Only buyer and artisan involved can read/write.
+    match /inquiries/{inquiryId} {
+      // Allow read and update if the authenticated user is either the buyer or the artisan involved
+      allow read, update: if request.auth != null && (resource.data.buyerUid == request.auth.uid || resource.data.artisanUid == request.auth.uid);
+      // Only authenticated buyers can initiate (create) inquiries
+      allow create: if request.auth != null && get(/databases/<span class="math-inline">\(database\)/documents/users/</span>(request.auth.uid)).data.userType == 'buyer';
+      allow delete: if false; // No direct deletion for prototype
+
+      // Messages sub-collection: Messages within an inquiry
+      match /messages/{messageId} {
+        // Allow read and create messages if the authenticated user is part of the parent inquiry
+        allow read, create: if request.auth != null && (get(/databases/<span class="math-inline">\(database\)/documents/inquiries/</span>(inquiryId)).data.buyerUid == request.auth.uid || get(/databases/<span class="math-inline">\(database\)/documents/inquiries/</span>(inquiryId)).data.artisanUid == request.auth.uid);
+        allow update, delete: if false; // No direct message updates/deletions for MVP
+      }
+    }
+
+    // Reviews collection: All authenticated can read, only buyers can create.
+    match /reviews/{reviewId} {
+      allow read: if request.auth != null;
+      // Only authenticated buyers can create reviews
+      allow create: if request.auth != null && get(/databases/<span class="math-inline">\(database\)/documents/users/</span>(request.auth.uid)).data.userType == 'buyer';
+      allow update, delete: if false; // No updates/deletions for MVP
     }
   }
 }

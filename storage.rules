@@ -1,10 +1,16 @@
 rules_version = '2';
-
-// Craft rules based on data in your Firestore database
-// allow write: if firestore.get(
-//    /databases/(default)/documents/users/$(request.auth.uid)).data.isAdmin;
 service firebase.storage {
   match /b/{bucket}/o {
+    // Allow authenticated users to upload files to a 'product_images' folder (or similar)
+    // and allow all authenticated users to read images.
+    match /product_images/{fileName} { // This is a specific folder for product images
+      // Allow write if user is authenticated, file size < 5MB, and is an image type
+      allow write: if request.auth != null && request.resource.size < 5 * 1024 * 1024 // Max 5MB per image
+                    && request.resource.contentType.matches('image/.*'); // Only image files
+      // Allow read for all, as product images are public
+      allow read: if true;
+    }
+    // Disallow writing to other paths by default for security
     match /{allPaths=**} {
       allow read, write: if false;
     }
