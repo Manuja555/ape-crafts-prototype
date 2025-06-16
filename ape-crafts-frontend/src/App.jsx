@@ -6,7 +6,7 @@ function App() {
 
   return (
     <>
-      <h1 className=''>Hello World</h1>
+      <h1 className='text-blue-500 dark:text-red-400'>Hello World</h1>
       <p className="read-the-docs">
         Click on the Vite and React logos to learn more
       </p>
