@@ -6,10 +6,8 @@ function App() {
 
   return (
     <>
-      <h1 className='text-blue-500 dark:text-red-400'>Hello World</h1>
-      <p className="read-the-docs">
-        Click on the Vite and React logos to learn more
-      </p>
+      <div className='bg-amber-950'><h1>Hello World</h1></div>
+      
     </>
   )
 }
